@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>New User</title>
+</head>
+<body>
+
+<form th:method="POST" th:action="@{/admin}" th:object="${user}">
+
+  <label for="name">Enter name:</label>
+  <input type="text" th:field="*{name}" id="name"/>
+  <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Error</div>
+  <br/>
+
+  <label for="surname">Enter surname:</label>
+  <input type="text" th:field="*{surname}" id="surname"/>
+  <div th:if="${#fields.hasErrors('surname')}" th:errors="*{surname}">Error</div>
+  <br/>
+
+  <label for="age">Enter age:</label>
+  <input type="number" th:field="*{age}" id="age"/>
+  <div th:if="${#fields.hasErrors('age')}" th:errors="*{age}">Error</div>
+  <br/>
+
+  <label for="username">Enter username: </label>
+  <input id="username" th:field="*{username}" th:value="*{getUsername()}" type="text"/>
+  <div th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Error</div>
+  <br/>
+
+  <label for="password">Enter password:</label>
+  <input type="text" th:field="*{password}" id="password"/>
+  <br/>
+
+  <div th:each="role : ${allRoles}">
+    <label>
+      <input type="checkbox"
+             name="roles"
+             th:value="${role.id}"
+             th:text="${role.name}"
+      />
+    </label>
+  </div>
+  <input type="submit" value="Создать"/>
+</form>
+
+<form th:action="@{/logout}" method="post">
+  <input type="submit" value="Выйти"/>
+</form>
+
+</body>
+</html>

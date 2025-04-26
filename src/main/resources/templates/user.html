@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:th="https://www.thymeleaf.org" xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity3">
+<head>
+    <title>User</title>
+</head>
+<body>
+<h3>Добро пожаловать!</h3>
+<br>
+<table class="table-tabs">
+    <thead>
+    <tr>
+        <th scope="col">Поле</th>
+        <th scope="col">Информация</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td th:text="Username"/>
+        <td th:text="${user.getName()}"/>
+    </tr>
+    <tr>
+        <td th:text="Фамилия"/>
+        <td th:text="${user.getSurname()}"/>
+    </tr>
+    <tr>
+        <td th:text="Возраст"/>
+        <td th:text="${user.getAge()}"/>
+    </tr>
+    </tbody>
+</table>
+<br>
+<form th:action="@{/logout}" th:method="POST">
+    <input type="submit" th:value="Выйти"/>
+</form>
+</body>
+</html>
