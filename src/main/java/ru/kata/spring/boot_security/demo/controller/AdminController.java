@@ -1,6 +1,7 @@
 package ru.kata.spring.boot_security.demo.controller;
 
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -16,9 +17,9 @@ import java.util.List;
 @RequestMapping("/admin")
 public class AdminController {
 
-    private UserService userService;
-    private RoleRepository roleRepository;
-    private UserRepository userRepository;
+    private final UserService userService;
+    private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
 
     public AdminController(UserService userService, RoleRepository roleRepository, UserRepository userRepository) {
         this.userService = userService;
@@ -35,7 +36,7 @@ public class AdminController {
     @GetMapping("/create")
     public String createForm(Model model) {
         model.addAttribute("user", new User());
-        model.addAttribute("allRoles", roleRepository.findAll());
+        model.addAttribute("allRoles", userService.getAllRoles());
         return "create";
     }
 
@@ -56,7 +57,7 @@ public class AdminController {
 
         userService.createUser(user, rolesId);
         return "redirect:/admin";
-        }
+    }
 
     @GetMapping("/update")
     public String updateForm(@RequestParam(value = "id") long id, Model model) {
@@ -68,7 +69,7 @@ public class AdminController {
     @PostMapping("/update")
     public String update(@ModelAttribute("user") @Valid User user,
                          BindingResult bindingResult) {
-        if(bindingResult.hasErrors()) {
+        if (bindingResult.hasErrors()) {
             return "update";
         }
         userService.updateUser(user.getId(), user);

@@ -16,21 +16,58 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-public class UserServiceImpl implements UserDetailsService {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserServiceImpl(UserRepository userRepository) {
+    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+
+    @Override
+    public List<User> showAllUsers() {
+        return userRepository.findAll();
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username)
-            throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username);
-        if (user == null) {
-            throw new UsernameNotFoundException("User not found");
-        }
-        return user;
+    public User getUser(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
+    @Override
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
+    }
+
+    @Override
+    public void createUser(User user, List<Long> rolesId) {
+        Set<Role> roles = roleRepository.findAllByIdIn(rolesId);
+        user.setRoles(roles);
+        userRepository.save(user);
+    }
+
+    @Override
+    public void updateUser(Long id, User updateUser) {
+        User existingUser = getUser(id);
+        existingUser.setUsername(updateUser.getUsername());
+        existingUser.setPassword(updateUser.getPassword());
+        existingUser.setRoles(updateUser.getRoles());
+        userRepository.save(existingUser);
+    }
+
+    @Override
+    public void deleteUser(Long id) {
+        userRepository.deleteById(id);
+    }
+
+    @Override
+    public User findByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }
