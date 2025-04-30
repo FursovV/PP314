@@ -1,4 +1,4 @@
-package ru.kata.spring.boot_security.demo.security;
+/*package ru.kata.spring.boot_security.demo.security;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -52,4 +52,4 @@ public class UsersDetails implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
-}
+}*/
