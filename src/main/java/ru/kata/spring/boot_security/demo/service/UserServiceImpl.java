@@ -49,6 +49,7 @@ public class UserServiceImpl implements UserService {
     public void createUser(User user, List<Long> rolesId) {
         Set<Role> roles = roleRepository.findAllByIdIn(rolesId);
         user.setRoles(roles);
+        user.setPassword(passwordEncoder.encode(user.getPassword())); // Хеширование
         userRepository.save(user);
     }
 
@@ -56,7 +57,7 @@ public class UserServiceImpl implements UserService {
     public void updateUser(Long id, User updateUser) {
         User existingUser = getUser(id);
         existingUser.setUsername(updateUser.getUsername());
-        existingUser.setPassword(updateUser.getPassword());
+        existingUser.setPassword(passwordEncoder.encode(updateUser.getPassword())); // Хеширование
         existingUser.setRoles(updateUser.getRoles());
         userRepository.save(existingUser);
     }

@@ -3,50 +3,59 @@
 <head>
   <meta charset="UTF-8">
   <title>New User</title>
+  <style>
+    .error {color: red;}
+  </style>
 </head>
 <body>
+<h2>Создание нового пользователя</h2>
 
 <form th:method="POST" th:action="@{/admin}" th:object="${user}">
 
-  <label for="name">Enter name:</label>
-  <input type="text" th:field="*{name}" id="name"/>
-  <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}">Error</div>
-  <br/>
+  <!-- Name -->
+  <label for="name">Имя:</label>
+  <input type="text" th:field="*{name}" id="name" required>
+  <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="error"></div>
+  <br>
 
-  <label for="surname">Enter surname:</label>
-  <input type="text" th:field="*{surname}" id="surname"/>
-  <div th:if="${#fields.hasErrors('surname')}" th:errors="*{surname}">Error</div>
-  <br/>
+  <!-- Surname -->
+  <label for="surname">Фамилия:</label>
+  <input type="text" th:field="*{surname}" id="surname" required>
+  <div th:if="${#fields.hasErrors('surname')}" th:errors="*{surname}" class="error"></div>
+  <br>
 
-  <label for="age">Enter age:</label>
-  <input type="number" th:field="*{age}" id="age"/>
-  <div th:if="${#fields.hasErrors('age')}" th:errors="*{age}">Error</div>
-  <br/>
+  <!-- Age -->
+  <label for="age">Возраст:</label>
+  <input type="number" th:field="*{age}" id="age" min="1" required>
+  <div th:if="${#fields.hasErrors('age')}" th:errors="*{age}" class="error"></div>
+  <br>
 
-  <label for="username">Enter username: </label>
-  <input id="username" th:field="*{username}" th:value="*{getUsername()}" type="text"/>
-  <div th:if="${#fields.hasErrors('username')}" th:errors="*{username}">Error</div>
-  <br/>
+  <!-- Username -->
+  <label for="username">Логин:</label>
+  <input type="text" th:field="*{username}" id="username" required>
+  <div th:if="${#fields.hasErrors('username')}" th:errors="*{username}" class="error"></div>
+  <div th:if="${param.error != null}" class="error">Логин уже занят!</div>
+  <br>
 
-  <label for="password">Enter password:</label>
-  <input type="text" th:field="*{password}" id="password"/>
-  <br/>
+  <!-- Password -->
+  <label for="password">Пароль:</label>
+  <input type="password" th:field="*{password}" id="password" minlength="3" required>
+  <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error"></div>
+  <br>
 
+  <!-- Roles -->
   <div th:each="role : ${allRoles}">
     <label>
       <input type="checkbox"
              name="roles"
              th:value="${role.id}"
-             th:text="${role.name}"
-      />
-    </label>
+             th:text="${role.name}">
+    </label><br>
   </div>
-  <input type="submit" value="Создать"/>
+
+  <button type="submit">Создать</button>
 </form>
 
-<form th:action="@{/logout}" method="post">
-  <input type="submit" value="Выйти"/>
-</form>
-
+<a th:href="@{/admin}">Назад к списку</a>
 </body>
 </html>
