@@ -17,7 +17,7 @@ public interface UserService {
 
     void createUser(User user, List<Long> rolesId);
 
-    void updateUser(Long id, User updateUser);
+    void updateUser(Long id, User updateUser, List<Long> roleId);
 
     void deleteUser(Long id);
 

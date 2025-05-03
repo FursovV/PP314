@@ -1,9 +1,6 @@
 package ru.kata.spring.boot_security.demo.service;
 
 import jakarta.transaction.Transactional;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -35,8 +32,9 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public User getUser(Long id) {
-        return userRepository.findById(id)
+        return userRepository.findByIdWithRoles(id)
                 .orElseThrow(() -> new RuntimeException("User not found"));
     }
 
@@ -46,19 +44,46 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void createUser(User user, List<Long> rolesId) {
+        if (rolesId == null || rolesId.isEmpty()) {
+            throw new IllegalArgumentException("User must have at least one role");
+        }
+
         Set<Role> roles = roleRepository.findAllByIdIn(rolesId);
+        if (roles.isEmpty()) {
+            throw new IllegalArgumentException("No valid roles found");
+        }
+
         user.setRoles(roles);
-        user.setPassword(passwordEncoder.encode(user.getPassword())); // Хеширование
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
     }
 
     @Override
-    public void updateUser(Long id, User updateUser) {
+    @Transactional
+    public void updateUser(Long id, User updateUser, List<Long> roleIds) {
+
         User existingUser = getUser(id);
+
         existingUser.setUsername(updateUser.getUsername());
-        existingUser.setPassword(passwordEncoder.encode(updateUser.getPassword())); // Хеширование
-        existingUser.setRoles(updateUser.getRoles());
+
+        String rawPassword = updateUser.getPassword();
+        if (!rawPassword.isEmpty()
+                && !passwordEncoder.matches(rawPassword, existingUser.getPassword())) {
+            existingUser.setPassword(passwordEncoder.encode(rawPassword));
+        }
+
+        Set<Role> newRoles = roleRepository.findAllByIdIn(roleIds);
+        if (newRoles.isEmpty()) {
+            throw new IllegalArgumentException("User must have at least one role");
+        }
+        existingUser.setRoles(newRoles);
+
+        existingUser.setName(updateUser.getName());
+        existingUser.setSurname(updateUser.getSurname());
+        existingUser.setAge(updateUser.getAge());
+
         userRepository.save(existingUser);
     }
 
@@ -69,6 +94,6 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User findByUsername(String username) {
-        return userRepository.findByUsername(username);
+        return userRepository.findByUsernameWithRoles(username);
     }
 }

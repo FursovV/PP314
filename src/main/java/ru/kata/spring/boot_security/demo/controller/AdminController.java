@@ -1,7 +1,6 @@
 package ru.kata.spring.boot_security.demo.controller;
 
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -60,7 +59,7 @@ public class AdminController {
     }
 
     @GetMapping("/update")
-    public String updateForm(@RequestParam(value = "id") long id, Model model) {
+    public String updateForm(@RequestParam(value = "id") Long id, Model model) {
         model.addAttribute("user", userService.getUser(id));
         model.addAttribute("allRoles", roleRepository.findAll());
         return "update";
@@ -68,11 +67,13 @@ public class AdminController {
 
     @PostMapping("/update")
     public String update(@ModelAttribute("user") @Valid User user,
-                         BindingResult bindingResult) {
+                         BindingResult bindingResult,
+                         @RequestParam("roles") List<Long> rolesId) {
+
         if (bindingResult.hasErrors()) {
             return "update";
         }
-        userService.updateUser(user.getId(), user);
+        userService.updateUser(user.getId(), user,rolesId);
         return "redirect:/admin";
     }
 

@@ -30,7 +30,7 @@ public class User implements UserDetails {
     @NotNull(message = "Поле не может быть пустым")
     @Min(value = 0, message = "Возраст должен быть больше нуля")
     @Column
-    private Integer age;
+    private int age;
 
     @NotNull(message = "Поле не может быть пустым")
     @Column(unique = true)
@@ -40,7 +40,7 @@ public class User implements UserDetails {
     @Column
     private String password;
 
-    @ManyToMany(fetch = FetchType.EAGER)
+    @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
@@ -65,7 +65,7 @@ public class User implements UserDetails {
         this.age = age;
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
@@ -139,4 +139,16 @@ public class User implements UserDetails {
         this.username = username;
     }
 
+    @Override
+    public String toString() {
+        return "User{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", surname='" + surname + '\'' +
+                ", age=" + age +
+                ", username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                ", roles=" + roles +
+                '}';
+    }
 }
