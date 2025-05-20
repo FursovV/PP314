@@ -1,10 +1,7 @@
 package ru.kata.spring.boot_security.demo.model;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -30,11 +27,12 @@ public class User implements UserDetails {
     @NotNull(message = "Поле не может быть пустым")
     @Min(value = 0, message = "Возраст должен быть больше нуля")
     @Column
-    private int age;
+    private Integer age;
 
     @NotNull(message = "Поле не может быть пустым")
+    @Email(message = "Не корректынй email")
     @Column(unique = true)
-    private String username;
+    private String email;
 
     @NotNull(message = "Поле не может быть пустым")
     @Column
@@ -89,12 +87,20 @@ public class User implements UserDetails {
         this.surname = surname;
     }
 
-    public int getAge() {
+    public Integer getAge() {
         return Objects.requireNonNullElse(age, 0);
     }
 
     public void setAge(Integer age) {
         this.age = age;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     @Override
@@ -112,7 +118,7 @@ public class User implements UserDetails {
     }
 
     public String getUsername() {
-        return username;
+        return email;
     }
 
     @Override
@@ -135,8 +141,8 @@ public class User implements UserDetails {
         return true;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setUsername(String email) {
+        this.email = email;
     }
 
     @Override
@@ -146,7 +152,7 @@ public class User implements UserDetails {
                 ", name='" + name + '\'' +
                 ", surname='" + surname + '\'' +
                 ", age=" + age +
-                ", username='" + username + '\'' +
+                ", username='" + email + '\'' +
                 ", password='" + password + '\'' +
                 ", roles=" + roles +
                 '}';

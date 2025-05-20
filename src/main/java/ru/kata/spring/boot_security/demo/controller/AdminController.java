@@ -6,8 +6,6 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import ru.kata.spring.boot_security.demo.model.User;
-import ru.kata.spring.boot_security.demo.repository.RoleRepository;
-import ru.kata.spring.boot_security.demo.repository.UserRepository;
 import ru.kata.spring.boot_security.demo.service.UserService;
 
 import java.util.List;
@@ -17,70 +15,91 @@ import java.util.List;
 public class AdminController {
 
     private final UserService userService;
-    private final RoleRepository roleRepository;
-    private final UserRepository userRepository;
 
-    public AdminController(UserService userService, RoleRepository roleRepository, UserRepository userRepository) {
+    public AdminController(UserService userService) {
         this.userService = userService;
-        this.roleRepository = roleRepository;
-        this.userRepository = userRepository;
     }
 
-    @GetMapping()
-    public String showAllUsers(Model model) {
+    @GetMapping
+    public String showAdminPanel(Model model) {
         model.addAttribute("users", userService.showAllUsers());
+        model.addAttribute("user", new User()); // Для формы создания
+        model.addAttribute("allRoles", userService.getAllRoles());
         return "list";
     }
 
+    @GetMapping("/edit/{id}")
+    @ResponseBody
+    public User getUserForEdit(@PathVariable Long id) {
+        return userService.getUser(id);
+    }
+
     @GetMapping("/create")
-    public String createForm(Model model) {
+    public String showCreateForm(Model model) {
         model.addAttribute("user", new User());
         model.addAttribute("allRoles", userService.getAllRoles());
-        return "create";
+        return "create"; // Возвращает форму создания
     }
 
-    @PostMapping()
-    public String create(@ModelAttribute("user") @Valid User user,
-                         BindingResult bindingResult, Model model, @RequestParam("roles") List<Long> rolesId) {
+    @PostMapping("/create")
+    public String createUser(
+            @ModelAttribute("user") @Valid User user,
+            BindingResult bindingResult,
+            @RequestParam("roles") List<Long> rolesId, // Исправлено имя параметра
+            Model model
+    ) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("allRoles", roleRepository.findAll());
+            model.addAttribute("allRoles", userService.getAllRoles());
             return "create";
         }
 
-        if (userRepository.existsByUsername(user.getUsername())) {
-            bindingResult.rejectValue("username", "error.user",
-                    "Это имя пользователя уже занято");
-            model.addAttribute("allRoles", roleRepository.findAll());
+        try {
+            userService.createUser(user, rolesId);
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("error", true); // Исправлено для работы с param.error
+            model.addAttribute("allRoles", userService.getAllRoles());
             return "create";
         }
 
-        userService.createUser(user, rolesId);
         return "redirect:/admin";
-    }
-
-    @GetMapping("/update")
-    public String updateForm(@RequestParam(value = "id") Long id, Model model) {
-        model.addAttribute("user", userService.getUser(id));
-        model.addAttribute("allRoles", roleRepository.findAll());
-        return "update";
     }
 
     @PostMapping("/update")
-    public String update(@ModelAttribute("user") @Valid User user,
-                         BindingResult bindingResult,
-                         @RequestParam("roles") List<Long> rolesId) {
+    public String updateUser(
+            @ModelAttribute("user") @Valid User user,
+            BindingResult bindingResult,
+            @RequestParam(value = "roles", required = false) List<Long> roleIds,
+            Model model) {
+
+        // Проверка на наличие выбранных ролей
+        if (roleIds == null || roleIds.isEmpty()) {
+            bindingResult.rejectValue("roles", "error.user", "Выберите хотя бы одну роль");
+        }
 
         if (bindingResult.hasErrors()) {
-            return "update";
+            model.addAttribute("users", userService.showAllUsers());
+            model.addAttribute("allRoles", userService.getAllRoles());
+            return "list";
         }
-        userService.updateUser(user.getId(), user,rolesId);
-        return "redirect:/admin";
+
+        try {
+            userService.updateUser(user.getId(), user, roleIds);
+            return "redirect:/admin";
+        } catch (IllegalArgumentException e) {
+            model.addAttribute("errorMessage", e.getMessage());
+        } catch (Exception e) {
+            model.addAttribute("errorMessage", "Ошибка при обновлении: " + e.getMessage());
+        }
+
+        model.addAttribute("users", userService.showAllUsers());
+        model.addAttribute("allRoles", userService.getAllRoles());
+        return "list";
     }
 
-    @GetMapping("/delete")
-    public String delete(@RequestParam(value = "id") long id) {
+
+    @PostMapping("/delete")
+    public String deleteUser(@RequestParam Long id) {
         userService.deleteUser(id);
         return "redirect:/admin";
     }
 }
-

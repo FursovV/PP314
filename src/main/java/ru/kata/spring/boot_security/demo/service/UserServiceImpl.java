@@ -1,5 +1,6 @@
 package ru.kata.spring.boot_security.demo.service;
 
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import ru.kata.spring.boot_security.demo.repository.UserRepository;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -27,8 +29,9 @@ public class UserServiceImpl implements UserService {
 
 
     @Override
+    @Transactional
     public List<User> showAllUsers() {
-        return userRepository.findAll();
+        return userRepository.findAllWithRoles();
     }
 
     @Override
@@ -60,31 +63,39 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    @Override
+    // UserServiceImpl.java
     @Transactional
-    public void updateUser(Long id, User updateUser, List<Long> roleIds) {
+    public void updateUser(Long id, User updatedUser, List<Long> roleIds) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        User existingUser = getUser(id);
-
-        existingUser.setUsername(updateUser.getUsername());
-
-        String rawPassword = updateUser.getPassword();
-        if (!rawPassword.isEmpty()
-                && !passwordEncoder.matches(rawPassword, existingUser.getPassword())) {
-            existingUser.setPassword(passwordEncoder.encode(rawPassword));
+        // Проверка уникальности username
+        if (!user.getUsername().equals(updatedUser.getUsername())) {
+            if (userRepository.existsByEmail(updatedUser.getEmail())) {
+                throw new IllegalArgumentException("Username уже существует");
+            }
         }
 
-        Set<Role> newRoles = roleRepository.findAllByIdIn(roleIds);
+        // Обновление пароля
+        if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
+            user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
+        }
+
+        // Обновление ролей
+        Set<Role> newRoles = roleRepository.findByIds(roleIds);
+
         if (newRoles.isEmpty()) {
-            throw new IllegalArgumentException("User must have at least one role");
+            throw new IllegalArgumentException("Не найдены указанные роли");
         }
-        existingUser.setRoles(newRoles);
+        user.setRoles(newRoles);
 
-        existingUser.setName(updateUser.getName());
-        existingUser.setSurname(updateUser.getSurname());
-        existingUser.setAge(updateUser.getAge());
+        // Обновление остальных полей
+        user.setName(updatedUser.getName());
+        user.setSurname(updatedUser.getSurname());
+        user.setAge(updatedUser.getAge());
+        user.setEmail(updatedUser.getEmail());
 
-        userRepository.save(existingUser);
+        userRepository.save(user);
     }
 
     @Override
@@ -93,7 +104,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findByUsername(String username) {
-        return userRepository.findByUsernameWithRoles(username);
+    public User findByUsername(String email) {
+        return userRepository.findByUsernameWithRoles(email);
     }
 }
