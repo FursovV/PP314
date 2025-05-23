@@ -17,7 +17,6 @@
                 with roles:
                 <span th:each="role, iterStat : ${#authentication.principal.authorities}">
                     <span th:text="${role.authority.replace('ROLE_', '')}"></span>
-                    <span th:if="${!iterStat.last}">, </span>
                 </span>
             </span>
         </div>
@@ -38,7 +37,7 @@
                         <a class="nav-link active" href="#"><i class="person-gear me-0"></i>Admin</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="user"><i class="person me-2"></i>User</a>
+                        <a class="nav-link" href="/admin/user"><i class="person me-2"></i>User</a>
                     </li>
                 </ul>
             </div>
@@ -180,9 +179,11 @@
                                         multiple
                                         aria-label="Выберите роли"
                                         name="roles"
-                                        size="2">
+                                        size="2"
+                                        required>
                                     <option th:each="role : ${allRoles}"
                                             th:value="${role.id}"
+                                            th:selected="${#lists.contains(user.roles, role)}"
                                             th:text="${#strings.replace(role.name, 'ROLE_', '')}">
                                     </option>
                                 </select>
@@ -310,7 +311,7 @@
         const userId = button.getAttribute('data-user-id');
         const row = button.closest('tr');
 
-        // Заполнение основных полей
+        // Основные поля
         document.getElementById('editUserId').value = userId;
         document.querySelector('input[name="name"]').value = row.cells[1].textContent.trim();
         document.querySelector('input[name="surname"]').value = row.cells[2].textContent.trim();
@@ -318,38 +319,21 @@
         document.querySelector('input[name="email"]').value = row.cells[4].textContent.trim();
 
         // Обработка ролей
-        const userRoles = Array.from(row.cells[5].querySelectorAll('.badge'))
-            .map(badge => badge.textContent.trim().toUpperCase().replace(' ', '_'));
+        const roleSelect = document.querySelector('select[name="roles"]');
+        Array.from(roleSelect.options).forEach(option => {
+            option.selected = false;
+        });
 
-        document.querySelectorAll('input[name="roles"]').forEach(checkbox => {
-            const roleName = checkbox.nextElementSibling.textContent
-                .trim()
-                .toUpperCase()
-                .replace(' ', '_');
-
-            checkbox.checked = userRoles.includes(roleName);
+        Array.from(row.cells[5].querySelectorAll('span span')).forEach(roleElement => {
+            const roleName = roleElement.textContent.trim().toUpperCase().replace(' ', '_');
+            Array.from(roleSelect.options).forEach(option => {
+                if (option.textContent.trim().toUpperCase().replace(' ', '_') === roleName) {
+                    option.selected = true;
+                }
+            });
         });
     });
 
-
-    /*document.getElementById('deleteModal').addEventListener('show.bs.modal', event => {
-        const button = event.relatedTarget;
-        const row = button.closest('tr');
-
-        document.getElementById('deleteUserId').value = button.getAttribute('data-user-id');
-        document.getElementById('deleteFirstName').textContent = row.cells[1].textContent;
-        document.getElementById('deleteLastName').textContent = row.cells[2].textContent;
-        document.getElementById('deleteAge').textContent = row.cells[3].textContent;
-        document.getElementById('deleteEmail').textContent = row.cells[4].textContent;
-
-        const roles = Array.from(row.cells[5].querySelectorAll('.badge'))
-            .map(badge => badge.textContent.trim())
-            .join(', ');
-
-        document.getElementById('deleteRoles').textContent = roles;
-    });
-*/
-    // Валидация формы
     document.getElementById('editForm').addEventListener('submit', function (event) {
         if (!this.checkValidity()) {
             event.preventDefault()

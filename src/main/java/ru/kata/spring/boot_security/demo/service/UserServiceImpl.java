@@ -63,39 +63,38 @@ public class UserServiceImpl implements UserService {
         userRepository.save(user);
     }
 
-    // UserServiceImpl.java
+
     @Transactional
     public void updateUser(Long id, User updatedUser, List<Long> roleIds) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        // Проверка уникальности username
-        if (!user.getUsername().equals(updatedUser.getUsername())) {
+        // Проверка уникальности email
+        if (!user.getEmail().equals(updatedUser.getEmail())) {
             if (userRepository.existsByEmail(updatedUser.getEmail())) {
-                throw new IllegalArgumentException("Username уже существует");
+                throw new IllegalArgumentException("Email уже существует");
             }
         }
 
-        // Обновление пароля
+        // Обновление пароля (только если не пустой)
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
 
-        // Обновление ролей
-        Set<Role> newRoles = roleRepository.findByIds(roleIds);
-
-        if (newRoles.isEmpty()) {
-            throw new IllegalArgumentException("Не найдены указанные роли");
+        // Обновление ролей (только если переданы roleIds)
+        if (roleIds != null && !roleIds.isEmpty()) {
+            Set<Role> newRoles = roleRepository.findByIds(roleIds);
+            if (newRoles.isEmpty()) {
+                throw new IllegalArgumentException("Роли не найдены");
+            }
+            user.setRoles(newRoles);
         }
-        user.setRoles(newRoles);
 
         // Обновление остальных полей
         user.setName(updatedUser.getName());
         user.setSurname(updatedUser.getSurname());
         user.setAge(updatedUser.getAge());
         user.setEmail(updatedUser.getEmail());
-
-        userRepository.save(user);
     }
 
     @Override

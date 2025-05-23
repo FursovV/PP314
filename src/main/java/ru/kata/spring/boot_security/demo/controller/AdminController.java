@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.service.UserService;
 
+import java.security.Principal;
 import java.util.List;
 
 @Controller
@@ -29,7 +30,6 @@ public class AdminController {
     }
 
     @GetMapping("/edit/{id}")
-    @ResponseBody
     public User getUserForEdit(@PathVariable Long id) {
         return userService.getUser(id);
     }
@@ -38,14 +38,14 @@ public class AdminController {
     public String showCreateForm(Model model) {
         model.addAttribute("user", new User());
         model.addAttribute("allRoles", userService.getAllRoles());
-        return "create"; // Возвращает форму создания
+        return "create";
     }
 
     @PostMapping("/create")
     public String createUser(
             @ModelAttribute("user") @Valid User user,
             BindingResult bindingResult,
-            @RequestParam("roles") List<Long> rolesId, // Исправлено имя параметра
+            @RequestParam("roles") List<Long> rolesId,
             Model model
     ) {
         if (bindingResult.hasErrors()) {
@@ -68,13 +68,9 @@ public class AdminController {
     public String updateUser(
             @ModelAttribute("user") @Valid User user,
             BindingResult bindingResult,
-            @RequestParam(value = "roles", required = false) List<Long> roleIds,
+            @RequestParam(value = "roles", required = false) List<Long> roleIds, // required = false
             Model model) {
 
-        // Проверка на наличие выбранных ролей
-        if (roleIds == null || roleIds.isEmpty()) {
-            bindingResult.rejectValue("roles", "error.user", "Выберите хотя бы одну роль");
-        }
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("users", userService.showAllUsers());
@@ -96,6 +92,12 @@ public class AdminController {
         return "list";
     }
 
+    @GetMapping("/user")
+    public String userPage(Principal principal, Model model) {
+        User user = userService.findByUsername(principal.getName());
+        model.addAttribute("user", user);
+        return "users";
+    }
 
     @PostMapping("/delete")
     public String deleteUser(@RequestParam Long id) {
