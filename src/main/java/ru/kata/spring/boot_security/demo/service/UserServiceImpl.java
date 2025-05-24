@@ -69,19 +69,19 @@ public class UserServiceImpl implements UserService {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        // Проверка уникальности email
+
         if (!user.getEmail().equals(updatedUser.getEmail())) {
             if (userRepository.existsByEmail(updatedUser.getEmail())) {
                 throw new IllegalArgumentException("Email уже существует");
             }
         }
 
-        // Обновление пароля (только если не пустой)
+
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
 
-        // Обновление ролей (только если переданы roleIds)
+
         if (roleIds != null && !roleIds.isEmpty()) {
             Set<Role> newRoles = roleRepository.findByIds(roleIds);
             if (newRoles.isEmpty()) {
@@ -90,7 +90,7 @@ public class UserServiceImpl implements UserService {
             user.setRoles(newRoles);
         }
 
-        // Обновление остальных полей
+
         user.setName(updatedUser.getName());
         user.setSurname(updatedUser.getSurname());
         user.setAge(updatedUser.getAge());
