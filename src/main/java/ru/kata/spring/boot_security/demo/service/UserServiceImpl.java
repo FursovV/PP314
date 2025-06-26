@@ -10,7 +10,10 @@ import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.repository.RoleRepository;
 import ru.kata.spring.boot_security.demo.repository.UserRepository;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,14 +34,15 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional
     public List<User> showAllUsers() {
+
         return userRepository.findAllWithRoles();
     }
 
     @Override
     @Transactional
-    public User getUser(Long id) {
-        return userRepository.findByIdWithRoles(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public Optional<User> getUser(Long id) {
+
+        return userRepository.findByIdWithRoles(id);
     }
 
     @Override
@@ -48,27 +52,32 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void createUser(User user, List<Long> rolesId) {
-        if (rolesId == null || rolesId.isEmpty()) {
-            throw new IllegalArgumentException("User must have at least one role");
-        }
-
-        Set<Role> roles = roleRepository.findAllByIdIn(rolesId);
-        if (roles.isEmpty()) {
-            throw new IllegalArgumentException("No valid roles found");
-        }
-
-        user.setRoles(roles);
+    public User createUser(User user) {
+        // Кодируем пароль перед сохранением
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        // Обрабатываем роли если они предоставлены
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
+            Set<Role> existingRoles = new HashSet<>();
+            for (Role role : user.getRoles()) {
+                Role existingRole = roleRepository.findById(role.getId()).orElse(null);
+                if (existingRole != null) {
+                    existingRoles.add(existingRole);
+                }
+            }
+            user.setRoles(existingRoles);
+        }
+
         userRepository.save(user);
+        return userRepository.findByIdWithRoles(user.getId()).orElse(user);
+
     }
 
 
     @Transactional
-    public void updateUser(Long id, User updatedUser, List<Long> roleIds) {
+    public User updateUser(Long id, User updatedUser) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
-
 
         if (!user.getEmail().equals(updatedUser.getEmail())) {
             if (userRepository.existsByEmail(updatedUser.getEmail())) {
@@ -76,25 +85,30 @@ public class UserServiceImpl implements UserService {
             }
         }
 
+        user.setName(updatedUser.getName());
+        user.setSurname(updatedUser.getSurname());
+        user.setAge(updatedUser.getAge());
+        user.setEmail(updatedUser.getEmail());
+
 
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
 
-
-        if (roleIds != null && !roleIds.isEmpty()) {
-            Set<Role> newRoles = roleRepository.findByIds(roleIds);
-            if (newRoles.isEmpty()) {
-                throw new IllegalArgumentException("Роли не найдены");
+        user.getRoles().clear();
+        if (updatedUser.getRoles() != null && !updatedUser.getRoles().isEmpty()) {
+            for (Role role : updatedUser.getRoles()) {
+                Role existingRole = roleRepository.findById(role.getId()).orElse(null);
+                if (existingRole != null) {
+                    user.getRoles().add(existingRole);
+                }
             }
-            user.setRoles(newRoles);
         }
 
 
-        user.setName(updatedUser.getName());
-        user.setSurname(updatedUser.getSurname());
-        user.setAge(updatedUser.getAge());
-        user.setEmail(updatedUser.getEmail());
+        userRepository.save(user);
+        return userRepository.findByIdWithRoles(user.getId()).orElse(user);
+
     }
 
     @Override
@@ -103,7 +117,29 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findByUsername(String email) {
-        return userRepository.findByUsernameWithRoles(email);
+    public Optional<User> findById(Long id) {
+        return userRepository.findById(id);
+    }
+
+    @Override
+    public User getByEmail(String email) {
+        return userRepository.findByEmail(email);
+    }
+
+    @Override
+    public User getByUsername(String name) {
+        return userRepository.findByName(name);
+    }
+
+    @Override
+    public String formatRoles(Collection<Role> roles) {
+        return roles.stream().map(role -> role.getName()
+                        .replace("ROLE_", " "))
+                .collect(Collectors.joining());
     }
 }
+
+
+
+
+

@@ -1,25 +1,31 @@
 package ru.kata.spring.boot_security.demo.service;
 
-
-import org.springframework.stereotype.Service;
 import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface UserService {
 
     List<User> showAllUsers();
 
-    User getUser(Long id);
+    Optional<User> getUser(Long id);
 
     List<Role> getAllRoles();
 
-    void createUser(User user, List<Long> rolesId);
+    User createUser(User user);
 
-    void updateUser(Long id, User updateUser, List<Long> roleId);
+    User updateUser(Long id, User updateUser);
 
     void deleteUser(Long id);
 
-    User findByUsername(String username);
+    Optional<User> findById(Long id);
+
+    User getByEmail(String email);
+
+    User getByUsername(String username);
+
+    String formatRoles(Collection<Role> roles);
 }

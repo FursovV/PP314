@@ -1,107 +1,92 @@
 package ru.kata.spring.boot_security.demo.controller;
 
-import jakarta.validation.Valid;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import ru.kata.spring.boot_security.demo.exception.CreateEx;
+import ru.kata.spring.boot_security.demo.exception.NoSuchUserException;
 import ru.kata.spring.boot_security.demo.model.User;
+import ru.kata.spring.boot_security.demo.repository.RoleRepository;
 import ru.kata.spring.boot_security.demo.service.UserService;
+import ru.kata.spring.boot_security.demo.model.Role;
 
-import java.security.Principal;
+import java.util.Map;
 import java.util.List;
+import java.util.Optional;
 
-@Controller
-@RequestMapping("/admin")
+@RestController
+@RequestMapping("/api")
 public class AdminController {
 
     private final UserService userService;
+    private final RoleRepository roleRepository;
 
-    public AdminController(UserService userService) {
+    public AdminController(UserService userService, RoleRepository roleRepository) {
         this.userService = userService;
+        this.roleRepository = roleRepository;
     }
 
-    @GetMapping
-    public String showAdminPanel(Model model) {
-        model.addAttribute("users", userService.showAllUsers());
-        model.addAttribute("user", new User()); // Для формы создания
-        model.addAttribute("allRoles", userService.getAllRoles());
-        return "list";
-    }
-
-    @GetMapping("/edit/{id}")
-    public User getUserForEdit(@PathVariable Long id) {
-        return userService.getUser(id);
-    }
-
-    @GetMapping("/create")
-    public String showCreateForm(Model model) {
-        model.addAttribute("user", new User());
-        model.addAttribute("allRoles", userService.getAllRoles());
-        return "create";
-    }
-
-    @PostMapping("/create")
-    public String createUser(
-            @ModelAttribute("user") @Valid User user,
-            BindingResult bindingResult,
-            @RequestParam("roles") List<Long> rolesId,
-            Model model
-    ) {
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("allRoles", userService.getAllRoles());
-            return "create";
+    @GetMapping("/loadUser")
+    public ResponseEntity<User> getLoadUser(Authentication authentication) {
+        String username = authentication.getName();
+        User loadUser = userService.getByEmail(username);
+        if (loadUser != null) {
+            loadUser.setFormattedRoles(userService.formatRoles(loadUser.getRoles()));
+            return new ResponseEntity<>(loadUser, HttpStatus.OK);
         }
-
-        try {
-            userService.createUser(user, rolesId);
-        } catch (IllegalArgumentException e) {
-            model.addAttribute("error", true); // Исправлено для работы с param.error
-            model.addAttribute("allRoles", userService.getAllRoles());
-            return "create";
-        }
-
-        return "redirect:/admin";
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
     }
 
-    @PostMapping("/update")
-    public String updateUser(
-            @ModelAttribute("user") @Valid User user,
-            BindingResult bindingResult,
-            @RequestParam(value = "roles", required = false) List<Long> roleIds, // required = false
-            Model model) {
-
-
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("users", userService.showAllUsers());
-            model.addAttribute("allRoles", userService.getAllRoles());
-            return "list";
-        }
-
-        try {
-            userService.updateUser(user.getId(), user, roleIds);
-            return "redirect:/admin";
-        } catch (IllegalArgumentException e) {
-            model.addAttribute("errorMessage", e.getMessage());
-        } catch (Exception e) {
-            model.addAttribute("errorMessage", "Ошибка при обновлении: " + e.getMessage());
-        }
-
-        model.addAttribute("users", userService.showAllUsers());
-        model.addAttribute("allRoles", userService.getAllRoles());
-        return "list";
+    @GetMapping("/users")
+    public ResponseEntity<List<User>> showAllUsers() {
+        List<User> users = userService.showAllUsers();
+        users.forEach(user -> user.setFormattedRoles(userService.formatRoles(user.getRoles())));
+        return new ResponseEntity<>(users, HttpStatus.OK);
     }
 
-    @GetMapping("/user")
-    public String userPage(Principal principal, Model model) {
-        User user = userService.findByUsername(principal.getName());
-        model.addAttribute("user", user);
-        return "users";
+    @GetMapping("/users/{id}")
+    public ResponseEntity<User> getUser(@PathVariable Long id) {
+        Optional<User> userOptional = userService.getUser(id);
+        if (userOptional.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        } else {
+            User user = userOptional.get();
+            user.setFormattedRoles(userService.formatRoles(user.getRoles()));
+            return new ResponseEntity<>(user, HttpStatus.OK);
+        }
     }
 
-    @PostMapping("/delete")
-    public String deleteUser(@RequestParam Long id) {
+    @PostMapping("/users")
+    public ResponseEntity<User> createUser(@RequestBody User user) {
+        if (userService.getByEmail(user.getEmail()) != null) {
+            throw new CreateEx("такой email существует");
+        }
+        User savedUser = userService.createUser(user);
+        savedUser.setFormattedRoles(userService.formatRoles(savedUser.getRoles()));
+        return ResponseEntity.status(HttpStatus.CREATED).body(savedUser);
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Map<String, String>> deleteUser(@PathVariable Long id) {
+        User user = userService.getUser(id)
+                .orElseThrow(() -> new NoSuchUserException("Пользователя не существует с " + id));
         userService.deleteUser(id);
-        return "redirect:/admin";
+        return ResponseEntity.ok(Map.of("message", "Пользователь успешно удалён"));
+    }
+
+    @PutMapping("/users/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
+        userService.updateUser(id, user);
+        User updated = userService.getUser(id).orElse(user);
+        updated.setFormattedRoles(userService.formatRoles(updated.getRoles()));
+        return ResponseEntity.ok(updated);
+    }
+
+    @GetMapping("/roles")
+    public ResponseEntity<List<Role>> getAllRoles() {
+        List<Role> roles = userService.getAllRoles();
+        return ResponseEntity.ok(roles);
     }
 }
+

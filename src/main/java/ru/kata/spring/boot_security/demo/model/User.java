@@ -15,12 +15,10 @@ public class User implements UserDetails {
     private Long id;
 
     @NotEmpty(message = "Поле не может быть пустым")
-    @Pattern(regexp = "^[а-яА-ЯёЁa-zA-Z]+$", message = "Имя не может содержать символы отличные от букв")
     @Column
     private String name;
 
     @NotEmpty(message = "Поле не может быть пустым")
-    @Pattern(regexp = "^[а-яА-ЯёЁa-zA-Z]+$", message = "Имя не может содержать символы отличные от букв")
     @Column
     private String surname;
 
@@ -34,7 +32,6 @@ public class User implements UserDetails {
     @Column(unique = true)
     private String email;
 
-    @NotNull(message = "Поле не может быть пустым")
     @Column
     private String password;
 
@@ -113,12 +110,19 @@ public class User implements UserDetails {
         return password;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
+    /**
+     * Returns the username used to authenticate the user. Cannot return
+     * <code>null</code>.
+     *
+     * @return the username (never <code>null</code>)
+     */
+    @Override
     public String getUsername() {
         return email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     @Override
@@ -141,8 +145,15 @@ public class User implements UserDetails {
         return true;
     }
 
-    public void setUsername(String email) {
-        this.email = email;
+    @Transient
+    private String formattedRoles;
+
+    public String getFormattedRoles() {
+        return formattedRoles;
+    }
+
+    public void setFormattedRoles(String formattedRoles) {
+        this.formattedRoles = formattedRoles;
     }
 
     @Override

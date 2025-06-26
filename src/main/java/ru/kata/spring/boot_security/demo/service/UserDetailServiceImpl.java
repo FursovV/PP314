@@ -14,14 +14,14 @@ public class UserDetailServiceImpl implements UserDetailsService {
 
     private UserRepository userRepository;
 
-    public UserDetailServiceImpl (UserRepository userRepository) {
+    public UserDetailServiceImpl(UserRepository userRepository) {
         this.userRepository = userRepository;
     }
 
     @Override
     @Transactional
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsernameWithRoles(username);
+        User user = userRepository.findByEmailWithRoles(username);
         if (user == null) {
             throw new UsernameNotFoundException("User not found");
         }
